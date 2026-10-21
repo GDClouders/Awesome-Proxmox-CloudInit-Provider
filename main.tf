@@ -48,6 +48,7 @@ module "vm" {
   vm_ipv4_gateway          = var.vm_ipv4_gateway
   dns_servers              = var.dns_servers
   vm_username              = var.vm_username
+  vm_password              = var.vm_password
   ssh_public_key           = var.ssh_public_key
   ssh_public_key_path      = var.ssh_public_key_path
 }

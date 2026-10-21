@@ -218,6 +218,13 @@ variable "vm_username" {
   type = string
 }
 
+variable "vm_password" {
+  type      = string
+  default   = null
+  nullable  = true
+  sensitive = true
+}
+
 variable "ssh_public_key" {
   type     = string
   default  = null

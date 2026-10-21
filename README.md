@@ -33,6 +33,25 @@ test -f ~/.ssh/id_ed25519.pub
 In CI o ambienti senza file locale usare `ssh_public_key` con il contenuto della
 chiave pubblica; ha precedenza su `ssh_public_key_path`.
 
+## Password utente (opzionale)
+
+Per impostare una password Cloud-Init usare `TF_VAR_vm_password`, evitando il
+valore in `terraform.tfvars`:
+
+```bash
+export TF_VAR_vm_password='cambiami'
+```
+
+Oppure, se accettabile nel file locale ignorato da Git:
+
+```hcl
+vm_password = "cambiami"
+```
+
+La password resta in chiaro nello state Terraform. Con `vm_password = null`
+l'accesso usa solo la chiave SSH. Alcune cloud image disabilitano il login SSH
+con password: in quel caso funziona la console Proxmox.
+
 ## Esecuzione
 
 ```bash

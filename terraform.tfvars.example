@@ -52,4 +52,5 @@ dns_servers = [
 ]
 
 vm_username         = "debian"
+# vm_password       = "cambiami"
 ssh_public_key_path = "~/.ssh/id_ed25519.pub"

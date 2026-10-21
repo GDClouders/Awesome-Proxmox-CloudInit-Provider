@@ -309,6 +309,14 @@ variable "vm_username" {
   type        = string
 }
 
+variable "vm_password" {
+  description = "Password opzionale dell'utente Cloud-Init. Se null, accesso solo con chiave SSH. Terraform la salva in chiaro nello state."
+  type        = string
+  default     = null
+  nullable    = true
+  sensitive   = true
+}
+
 variable "ssh_public_key" {
   description = "Contenuto della chiave SSH pubblica. Se impostato, ha precedenza su ssh_public_key_path e consente il plan senza file locale."
   type        = string

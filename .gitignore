@@ -1,5 +1,4 @@
 .terraform/
-.terraform.lock.hcl
 *.tfstate
 *.tfstate.*
 *.tfplan
@@ -9,7 +8,9 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+.terraform.lock.hcl
 
 # Rimuovere questa riga solo se il file non contiene dati riservati.
 terraform.tfvars
 *.auto.tfvars
+AGENTS*

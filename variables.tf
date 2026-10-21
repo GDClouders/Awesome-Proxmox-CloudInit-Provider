@@ -1,5 +1,5 @@
 variable "proxmox_endpoint" {
-  description = "Endpoint API Proxmox VE, ad esempio https://172.16.200.10:8006/."
+  description = "Endpoint API Proxmox VE, ad esempio https://172.168.100.10:8006/."
   type        = string
 }
 
@@ -10,9 +10,9 @@ variable "proxmox_api_token" {
 }
 
 variable "proxmox_insecure" {
-  description = "Consente il certificato TLS self-signed dell'API Proxmox."
+  description = "Consente il certificato TLS self-signed dell'API Proxmox. Impostare true solo con certificati non attendibili."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "proxmox_node" {
@@ -37,14 +37,29 @@ variable "cloud_image_file_name" {
 }
 
 variable "cloud_image_checksum" {
-  description = "Checksum opzionale nel formato supportato dal provider, ad esempio sha256:<valore>."
+  description = "Checksum esadecimale opzionale dell'immagine, senza prefisso algoritmo. Richiede cloud_image_checksum_algorithm."
   type        = string
   default     = null
   nullable    = true
 }
 
+variable "cloud_image_checksum_algorithm" {
+  description = "Algoritmo del checksum: md5, sha1, sha224, sha256, sha384 o sha512. Richiesto con cloud_image_checksum."
+  type        = string
+  default     = null
+  nullable    = true
+
+  validation {
+    condition = (
+      var.cloud_image_checksum_algorithm == null ||
+      contains(["md5", "sha1", "sha224", "sha256", "sha384", "sha512"], var.cloud_image_checksum_algorithm)
+    )
+    error_message = "cloud_image_checksum_algorithm deve essere md5, sha1, sha224, sha256, sha384 oppure sha512."
+  }
+}
+
 variable "cloud_image_overwrite" {
-  description = "Riscarica l'immagine se il file esiste gia."
+  description = "Se true, riscarica l'immagine quando cambia la dimensione remota o locale. Se false, non esegue controlli e non sostituisce mai il file esistente."
   type        = bool
   default     = false
 }
@@ -182,7 +197,7 @@ variable "qemu_agent_enabled" {
 }
 
 variable "qemu_agent_timeout" {
-  description = "Timeout in secondi per l'attesa del QEMU Guest Agent."
+  description = "Durata massima di attesa del QEMU Guest Agent, ad esempio 15m o 90s."
   type        = string
   default     = "15m"
 }
@@ -212,9 +227,9 @@ variable "vm_disk_discard" {
 }
 
 variable "vm_disk_ssd" {
-  description = "Espone il disco come SSD."
+  description = "Espone il disco come SSD. Ignorato con interfaccia virtio: usare scsi per abilitarlo."
   type        = bool
-  default     = true
+  default     = false
 }
 
 variable "vm_efi_disk_enabled" {
@@ -294,25 +309,15 @@ variable "vm_username" {
   type        = string
 }
 
+variable "ssh_public_key" {
+  description = "Contenuto della chiave SSH pubblica. Se impostato, ha precedenza su ssh_public_key_path e consente il plan senza file locale."
+  type        = string
+  default     = null
+  nullable    = true
+}
+
 variable "ssh_public_key_path" {
-  description = "Percorso locale della chiave SSH pubblica."
+  description = "Percorso locale della chiave SSH pubblica, usato solo se ssh_public_key e null."
   type        = string
   default     = "~/.ssh/id_ed25519.pub"
-}
-
-check "static_ipv4_configuration" {
-  assert {
-    condition = (
-      var.vm_ipv4_mode == "dhcp" ||
-      (var.vm_ipv4_address != null && var.vm_ipv4_gateway != null)
-    )
-    error_message = "Con vm_ipv4_mode=static devi specificare vm_ipv4_address e vm_ipv4_gateway."
-  }
-}
-
-check "efi_configuration" {
-  assert {
-    condition     = var.vm_bios != "ovmf" || var.vm_efi_disk_enabled
-    error_message = "Con vm_bios=ovmf devi impostare vm_efi_disk_enabled=true."
-  }
 }

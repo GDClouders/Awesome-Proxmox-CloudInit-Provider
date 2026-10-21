@@ -1,13 +1,35 @@
-resource "proxmox_virtual_environment_download_file" "cloud_image" {
+locals {
+  ssh_public_key = (
+    var.ssh_public_key != null
+    ? trimspace(var.ssh_public_key)
+    : trimspace(file(pathexpand(var.ssh_public_key_path)))
+  )
+
+  vm_ipv4_address = (
+    var.vm_ipv4_mode == "dhcp"
+    ? "dhcp"
+    : (var.vm_ipv4_address == null ? null : "${var.vm_ipv4_address}/${var.vm_ipv4_prefix}")
+  )
+}
+
+resource "proxmox_download_file" "cloud_image" {
   content_type = "import"
   datastore_id = var.image_datastore
   node_name    = var.proxmox_node
 
-  url                    = var.cloud_image_url
-  file_name              = var.cloud_image_file_name
-  checksum                = var.cloud_image_checksum
-  overwrite               = var.cloud_image_overwrite
-  upload_timeout          = var.cloud_image_download_timeout
+  url                = var.cloud_image_url
+  file_name          = var.cloud_image_file_name
+  checksum           = var.cloud_image_checksum
+  checksum_algorithm = var.cloud_image_checksum_algorithm
+  overwrite          = var.cloud_image_overwrite
+  upload_timeout     = var.cloud_image_download_timeout
+
+  lifecycle {
+    precondition {
+      condition     = (var.cloud_image_checksum == null) == (var.cloud_image_checksum_algorithm == null)
+      error_message = "cloud_image_checksum e cloud_image_checksum_algorithm devono essere impostati insieme."
+    }
+  }
 }
 
 resource "proxmox_virtual_environment_vm" "this" {
@@ -19,6 +41,18 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   started         = var.vm_started
   stop_on_destroy = var.vm_stop_on_destroy
+
+  lifecycle {
+    precondition {
+      condition     = var.vm_ipv4_mode == "dhcp" || (var.vm_ipv4_address != null && var.vm_ipv4_gateway != null)
+      error_message = "Con vm_ipv4_mode=static devi specificare vm_ipv4_address e vm_ipv4_gateway."
+    }
+
+    precondition {
+      condition     = var.vm_bios != "ovmf" || var.vm_efi_disk_enabled
+      error_message = "Con vm_bios=ovmf devi impostare vm_efi_disk_enabled=true."
+    }
+  }
 
   machine = var.vm_machine
   bios    = var.vm_bios
@@ -51,7 +85,7 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   disk {
     datastore_id = var.vm_datastore
-    import_from  = proxmox_virtual_environment_download_file.cloud_image.id
+    import_from  = proxmox_download_file.cloud_image.id
     interface    = var.vm_disk_interface
     size         = var.vm_disk_size_gb
     iothread     = var.vm_disk_iothread
@@ -85,14 +119,14 @@ resource "proxmox_virtual_environment_vm" "this" {
 
     ip_config {
       ipv4 {
-        address = var.vm_ipv4_mode == "dhcp" ? "dhcp" : "${var.vm_ipv4_address}/${var.vm_ipv4_prefix}"
+        address = local.vm_ipv4_address
         gateway = var.vm_ipv4_mode == "dhcp" ? null : var.vm_ipv4_gateway
       }
     }
 
     user_account {
       username = var.vm_username
-      keys     = [trimspace(file(pathexpand(var.ssh_public_key_path)))]
+      keys     = [local.ssh_public_key]
     }
   }
 }

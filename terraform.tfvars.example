@@ -1,6 +1,9 @@
 proxmox_endpoint = "https://172.168.100.10:8006/"
 proxmox_node     = "pve-01"
 
+# Solo per certificati self-signed; lasciare false con CA valida.
+proxmox_insecure = true
+
 image_datastore = "local"
 vm_datastore    = "local"
 
@@ -8,12 +11,14 @@ vm_datastore    = "local"
 cloud_image_url       = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
 cloud_image_file_name = "debian-13-genericcloud-amd64.qcow2"
 cloud_image_overwrite = false
+# cloud_image_checksum           = "<hash-esadecimale>"
+# cloud_image_checksum_algorithm = "sha256"
 
 vm_id          = 201
 vm_hostname    = "passbolt"
 vm_domain      = "mgmt.gdservice.com"
 vm_description = "Server Passbolt su Debian 13, gestito tramite Terraform"
-vm_tags        = ["terraform", "debian", "passbolt"]
+vm_tags        = ["terraform", "debian"]
 
 vm_machine               = "q35"
 vm_bios                  = "seabios"

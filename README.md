@@ -21,11 +21,17 @@ Impostare il token senza salvarlo nei file Terraform:
 export TF_VAR_proxmox_api_token='terraform@pve!terraform=SECRET_TOKEN'
 ```
 
+Con certificato TLS self-signed impostare `proxmox_insecure = true`; il valore
+predefinito e `false` e verifica il certificato.
+
 Verificare la chiave SSH:
 
 ```bash
 test -f ~/.ssh/id_ed25519.pub
 ```
+
+In CI o ambienti senza file locale usare `ssh_public_key` con il contenuto della
+chiave pubblica; ha precedenza su `ssh_public_key_path`.
 
 ## Esecuzione
 
@@ -40,7 +46,7 @@ terraform apply tfplan
 ## Verifica della VM
 
 ```bash
-ssh debian@172.16.200.103
+ssh debian@172.168.100.103
 cloud-init status --wait
 hostname --fqdn
 ip -4 address
@@ -57,6 +63,7 @@ Per usare un'altra cloud image modificare almeno:
 - `vm_username`
 - `vm_bios` ed `vm_efi_disk_enabled`, se l'immagine richiede UEFI
 - `vm_disk_interface`, se richiesto dall'immagine
+- `vm_disk_ssd`, se serve emulazione SSD (non supportata con `virtio`)
 - `qemu_agent_enabled`, in base alla presenza dell'agent nel guest
 
 Esempio Ubuntu 24.04:
@@ -67,10 +74,19 @@ cloud_image_file_name = "ubuntu-24.04-noble-server-cloudimg-amd64.qcow2"
 vm_username           = "ubuntu"
 ```
 
+## Checksum immagine
+
+Per verificare il download impostare hash esadecimale e algoritmo separato:
+
+```hcl
+cloud_image_checksum           = "<hash>"
+cloud_image_checksum_algorithm = "sha256"
+```
+
 ## VLAN
 
-Usare `network_vlan_id = 200` quando `vmNet` e VLAN-aware e trasporta la VLAN 200 tagged.
-Usare `network_vlan_id = null` quando `vmNet` presenta gia la rete corretta untagged alla VM.
+Usare `network_vlan_id = 200` quando `vmbr0` e VLAN-aware e trasporta la VLAN 200 tagged.
+Usare `network_vlan_id = null` quando `vmbr0` presenta gia la rete corretta untagged alla VM.
 
 ## QEMU Guest Agent
 

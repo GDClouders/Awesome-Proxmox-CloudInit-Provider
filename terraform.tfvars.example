@@ -1,0 +1,50 @@
+proxmox_endpoint = "https://172.168.100.10:8006/"
+proxmox_node     = "pve-01"
+
+image_datastore = "local"
+vm_datastore    = "local"
+
+# Debian 13 Trixie Generic Cloud
+cloud_image_url       = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
+cloud_image_file_name = "debian-13-genericcloud-amd64.qcow2"
+cloud_image_overwrite = false
+
+vm_id          = 201
+vm_hostname    = "passbolt"
+vm_domain      = "mgmt.gdservice.com"
+vm_description = "Server Passbolt su Debian 13, gestito tramite Terraform"
+vm_tags        = ["terraform", "debian", "passbolt"]
+
+vm_machine               = "q35"
+vm_bios                  = "seabios"
+vm_efi_disk_enabled      = false
+vm_operating_system_type = "l26"
+
+vm_cpu_cores         = 2
+vm_cpu_sockets       = 1
+vm_cpu_type          = "x86-64-v2-AES"
+vm_memory_mb         = 4096
+vm_memory_balloon_mb = 4096
+vm_disk_size_gb      = 40
+vm_disk_interface    = "virtio0"
+
+# Lasciare false finche qemu-guest-agent non e installato e attivo nel guest.
+qemu_agent_enabled = false
+
+network_bridge          = "vmbr0"
+network_vlan_id         = 200
+network_model           = "virtio"
+network_firewall_enabled = false
+
+vm_ipv4_mode    = "static"
+vm_ipv4_address = "172.168.100.103"
+vm_ipv4_prefix  = 24
+vm_ipv4_gateway = "172.168.100.1"
+
+dns_servers = [
+  "172.168.140.11",
+  "172.168.140.12"
+]
+
+vm_username         = "debian"
+ssh_public_key_path = "~/.ssh/id_ed25519.pub"

@@ -1,0 +1,15 @@
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Rimuovere questa riga solo se il file non contiene dati riservati.
+terraform.tfvars
+*.auto.tfvars

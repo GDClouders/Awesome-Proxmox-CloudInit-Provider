@@ -323,6 +323,18 @@ variable "vm_password" {
   sensitive   = true
 }
 
+variable "ssh_password_auth_enabled" {
+  description = "Enable SSH password login in the guest via a Cloud-Init vendor-data snippet. Requires a snippets-enabled datastore and provider SSH access to the Proxmox node. Defaults to false because cloud images usually disable password auth."
+  type        = bool
+  default     = false
+}
+
+variable "snippet_datastore" {
+  description = "Datastore for the Cloud-Init vendor-data snippet. Must have the snippets content type enabled. Used only when ssh_password_auth_enabled is true."
+  type        = string
+  default     = "local"
+}
+
 variable "ssh_public_key" {
   description = "Public SSH key contents. If set, it takes precedence over ssh_public_key_path and allows planning without a local file."
   type        = string

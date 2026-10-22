@@ -9,6 +9,8 @@ system, network, DNS, and SSH access.
 - Terraform 1.6 or later
 - Proxmox VE 9
 - Image datastore with the `Import` content type enabled
+- Snippets-enabled datastore and SSH access from Terraform to the Proxmox node, only
+  if SSH password login is enabled
 - Cloud image compatible with Cloud-Init and QEMU/KVM
 - Proxmox API token with the required privileges
 - Local SSH public key
@@ -71,6 +73,8 @@ Values shown as `required` have no default and must be provided (for example in
 | `dns_servers` | `list(string)` | `[]` | VM DNS servers. |
 | `vm_username` | `string` | required | Administrative user created/configured by Cloud-Init. |
 | `vm_password` | `string` | `null` | Optional Cloud-Init user password. If `null`, access uses only the SSH key. Terraform stores it in plain text in the state. |
+| `ssh_password_auth_enabled` | `bool` | `false` | Enable SSH password login in the guest via a Cloud-Init vendor-data snippet. Requires a snippets-enabled datastore and provider SSH access to the Proxmox node. |
+| `snippet_datastore` | `string` | `"local"` | Datastore for the Cloud-Init vendor-data snippet. Must have the `snippets` content type enabled. Used only when `ssh_password_auth_enabled` is `true`. |
 | `ssh_public_key` | `string` | `null` | Public SSH key contents. If set, it takes precedence over `ssh_public_key_path` and allows planning without a local file. |
 | `ssh_public_key_path` | `string` | `"~/.ssh/id_ed25519.pub"` | Local path to the SSH public key, used only when `ssh_public_key` is `null`. |
 
@@ -113,8 +117,34 @@ vm_password = "changeme"
 ```
 
 The password remains in plain text in the Terraform state. With `vm_password = null`,
-access uses only the SSH key. Some cloud images disable SSH password login: in that
-case the Proxmox console works.
+access uses only the SSH key.
+
+### SSH password login
+
+`vm_password` only sets the Cloud-Init password; it does not enable SSH password
+authentication. Debian and Ubuntu cloud images ship with `PasswordAuthentication no`,
+so key-based login keeps working while password login is refused.
+
+To enable password login, set:
+
+```hcl
+ssh_password_auth_enabled = true
+snippet_datastore         = "local"
+```
+
+This creates a small Cloud-Init vendor-data snippet (`ssh_pwauth: true`) and attaches
+it with `vendor_data_file_id`, keeping the user and password from `user_account`.
+Requirements:
+
+- `snippet_datastore` must have the `Snippets` content type enabled.
+- Terraform must be able to SSH to the Proxmox node: the provider uploads snippets
+  over SSH. Configure the provider `ssh` block if the defaults do not work.
+- The setting applies to a new VM or after re-running Cloud-Init in the guest
+  (`sudo cloud-init clean --logs && sudo reboot`).
+
+With `vm_password = null`, enabling `ssh_password_auth_enabled` does not create a
+usable password. Prefer key-based authentication and enable password login only
+when needed.
 
 ## Running
 

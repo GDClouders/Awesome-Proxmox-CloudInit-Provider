@@ -236,6 +236,16 @@ variable "ssh_public_key" {
   nullable = true
 }
 
+variable "ssh_password_auth_enabled" {
+  type    = bool
+  default = false
+}
+
+variable "snippet_datastore" {
+  type    = string
+  default = "local"
+}
+
 variable "ssh_public_key_path" {
   type    = string
   default = "~/.ssh/id_ed25519.pub"

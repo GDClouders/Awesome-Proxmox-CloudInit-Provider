@@ -32,6 +32,20 @@ resource "proxmox_download_file" "cloud_image" {
   }
 }
 
+resource "proxmox_virtual_environment_file" "ssh_pwauth" {
+  count = var.ssh_password_auth_enabled ? 1 : 0
+
+  content_type = "snippets"
+  datastore_id = var.snippet_datastore
+  node_name    = var.proxmox_node
+  overwrite    = true
+
+  source_raw {
+    data      = "#cloud-config\nssh_pwauth: true\n"
+    file_name = "vm-${var.vm_id}-ssh-pwauth.yaml"
+  }
+}
+
 resource "proxmox_virtual_environment_vm" "this" {
   name        = var.vm_hostname
   description = var.vm_description
@@ -112,6 +126,12 @@ resource "proxmox_virtual_environment_vm" "this" {
 
   initialization {
     datastore_id = var.vm_datastore
+
+    vendor_data_file_id = (
+      var.ssh_password_auth_enabled
+      ? proxmox_virtual_environment_file.ssh_pwauth[0].id
+      : null
+    )
 
     dns {
       domain  = var.vm_domain

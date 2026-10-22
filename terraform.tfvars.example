@@ -55,3 +55,8 @@ dns_servers = [
 vm_username         = "debian"
 # vm_password       = "changeme"
 ssh_public_key_path = "~/.ssh/id_ed25519.pub"
+
+# Enable only if SSH password login is required: cloud images disable it by default.
+# Requires a snippets-enabled datastore and SSH access from Terraform to the Proxmox node.
+ssh_password_auth_enabled = false
+# snippet_datastore       = "local"

@@ -51,6 +51,9 @@ module "vm" {
   vm_username               = var.vm_username
   vm_password               = var.vm_password
   ssh_password_auth_enabled = var.ssh_password_auth_enabled
+  install_qemu_guest_agent  = var.install_qemu_guest_agent
+  guest_agent_package       = var.guest_agent_package
+  guest_agent_service       = var.guest_agent_service
   ssh_public_key            = var.ssh_public_key
   ssh_public_key_path       = var.ssh_public_key_path
   snippet_datastore         = var.snippet_datastore

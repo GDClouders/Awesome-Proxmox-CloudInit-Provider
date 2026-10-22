@@ -10,7 +10,7 @@ system, network, DNS, and SSH access.
 - Proxmox VE 9
 - Image datastore with the `Import` content type enabled
 - Snippets-enabled datastore and SSH access from Terraform to the Proxmox node, only
-  if SSH password login is enabled
+  if SSH password login or automatic guest-agent installation is enabled
 - Cloud image compatible with Cloud-Init and QEMU/KVM
 - Proxmox API token with the required privileges
 - Local SSH public key
@@ -53,7 +53,7 @@ Values shown as `required` have no default and must be provided (for example in
 | `vm_cpu_type` | `string` | `"x86-64-v2-AES"` | QEMU CPU type. |
 | `vm_memory_mb` | `number` | `2048` | Dedicated RAM in MB. |
 | `vm_memory_balloon_mb` | `number` | `2048` | Minimum ballooning RAM in MB. Use the same value as `vm_memory_mb` to prevent dynamic ballooning. |
-| `qemu_agent_enabled` | `bool` | `false` | Enable the QEMU Guest Agent on the Proxmox side. Set to `true` only if the agent is installed and running in the guest. |
+| `qemu_agent_enabled` | `bool` | `false` | Enable the QEMU Guest Agent on the Proxmox side. The agent must be installed in the guest; see `install_qemu_guest_agent`. |
 | `qemu_agent_timeout` | `string` | `"15m"` | Maximum wait for the QEMU Guest Agent, for example `15m` or `90s`. |
 | `vm_disk_size_gb` | `number` | `20` | Disk size in GB. Must not be smaller than the imported image size. |
 | `vm_disk_interface` | `string` | `"virtio0"` | Disk interface, for example `virtio0` or `scsi0`. |
@@ -74,7 +74,10 @@ Values shown as `required` have no default and must be provided (for example in
 | `vm_username` | `string` | required | Administrative user created/configured by Cloud-Init. |
 | `vm_password` | `string` | `null` | Optional Cloud-Init user password. If `null`, access uses only the SSH key. Terraform stores it in plain text in the state. |
 | `ssh_password_auth_enabled` | `bool` | `false` | Enable SSH password login in the guest via a Cloud-Init vendor-data snippet. Requires a snippets-enabled datastore and provider SSH access to the Proxmox node. |
-| `snippet_datastore` | `string` | `"local"` | Datastore for the Cloud-Init vendor-data snippet. Must have the `snippets` content type enabled. Used only when `ssh_password_auth_enabled` is `true`. |
+| `install_qemu_guest_agent` | `bool` | `false` | Install and start the QEMU guest agent via Cloud-Init `runcmd`. Detects apt-get, dnf, yum, or pacman. Requires a snippets-enabled datastore and provider SSH access to the Proxmox node. |
+| `guest_agent_package` | `string` | `"qemu-guest-agent"` | Package installed by `install_qemu_guest_agent`. The default name is available on Debian/Ubuntu, AlmaLinux, Rocky Linux, Fedora, and Arch Linux. |
+| `guest_agent_service` | `string` | `"qemu-guest-agent"` | systemd service enabled by `install_qemu_guest_agent`. Override together with `guest_agent_package` for non-standard agents. |
+| `snippet_datastore` | `string` | `"local"` | Datastore for the Cloud-Init vendor-data snippet. Must have the `snippets` content type enabled. Used only when `ssh_password_auth_enabled` or `install_qemu_guest_agent` is `true`. |
 | `ssh_public_key` | `string` | `null` | Public SSH key contents. If set, it takes precedence over `ssh_public_key_path` and allows planning without a local file. |
 | `ssh_public_key_path` | `string` | `"~/.ssh/id_ed25519.pub"` | Local path to the SSH public key, used only when `ssh_public_key` is `null`. |
 
@@ -169,23 +172,32 @@ cat /etc/resolv.conf
 
 ## Changing distribution
 
-To use another cloud image, change at least:
+The module is distribution-agnostic: it needs a Cloud-Init compatible QCOW2 image.
+When switching image, change at least:
 
-- `cloud_image_url`
-- `cloud_image_file_name`
-- `vm_username`
-- `vm_bios` and `vm_efi_disk_enabled`, if the image requires UEFI
-- `vm_disk_interface`, if required by the image
-- `vm_disk_ssd`, if SSD emulation is needed (not supported with `virtio`)
-- `qemu_agent_enabled`, depending on whether the agent is present in the guest
+- `cloud_image_url` and `cloud_image_file_name`
+- `vm_username`, matching the image's Cloud-Init default user
+- `vm_bios` and `vm_efi_disk_enabled`, only for images that require UEFI
+- `vm_disk_interface`, only if required by the image
+- `install_qemu_guest_agent` and `guest_agent_package`, if the image does not include
+  the agent
 
-Ubuntu 24.04 example:
+| Distribution | `vm_username` | Example `cloud_image_url` | Notes |
+| --- | --- | --- | --- |
+| Debian 13 | `debian` | `https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2` | Agent installed with apt. |
+| Ubuntu 24.04 | `ubuntu` | `https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img` | Upstream URL ends in `.img`; set `cloud_image_file_name` to a `.qcow2` name. |
+| AlmaLinux 9 | `almalinux` | `https://repo.almalinux.org/almalinux/9/cloud/x86_64/images/AlmaLinux-9-GenericCloud-latest.x86_64.qcow2` | Agent available from AppStream via dnf. |
+| Rocky Linux 9 | `rocky` | `https://dl.rockylinux.org/pub/rocky/9/images/x86_64/Rocky-9-GenericCloud-Base.latest.x86_64.qcow2` | Agent available from AppStream via dnf. |
+| Arch Linux | `arch` | `https://fastly.mirror.pkgbuild.com/images/latest/Arch-Linux-x86_64-cloudimg.qcow2` | Agent is preinstalled; `install_qemu_guest_agent` enables it. |
+| Fedora Cloud Base 44 | `fedora` | `https://download.fedoraproject.org/pub/fedora/linux/releases/44/Cloud/x86_64/images/Fedora-Cloud-Base-Generic-44-1.7.x86_64.qcow2` | Agent is preinstalled; `install_qemu_guest_agent` ensures it is enabled. |
 
-```hcl
-cloud_image_url       = "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
-cloud_image_file_name = "ubuntu-24.04-noble-server-cloudimg-amd64.qcow2"
-vm_username           = "ubuntu"
-```
+`cloud_image_file_name` must be the final path component of the URL with a `.qcow2`
+extension. All images above boot with the default `vm_bios = "seabios"`; use
+`ovmf` plus `vm_efi_disk_enabled = true` only if your image requires UEFI.
+
+Fedora Server's `Fedora-Server-Guest-Generic` qcow2 is a first-boot setup image and
+does not include Cloud-Init, so this module cannot provision it. Use Fedora Cloud
+Base for Fedora, or build a Fedora Server image with Cloud-Init.
 
 ## Image checksum
 
@@ -204,19 +216,60 @@ untagged to the VM.
 
 ## QEMU Guest Agent
 
-The default value is `false`. After installing and starting the agent in the guest:
+`qemu_agent_enabled` only enables the agent on the Proxmox side; the agent must also
+be installed and running in the guest. Most cloud images do not include it by default;
+Arch Linux and Fedora Cloud Base are exceptions.
+
+For a new VM, let Cloud-Init install it:
+
+```hcl
+install_qemu_guest_agent = true
+qemu_agent_enabled       = true
+snippet_datastore        = "local"
+```
+
+Cloud-Init runs a small installer on first boot that detects `apt-get`, `dnf`, `yum`,
+or `pacman`, then starts `qemu-guest-agent`. Override `guest_agent_package` and
+`guest_agent_service` if the image uses a different package or service name. The
+provider waits up to `qemu_agent_timeout` for the agent. If the installation takes
+longer than the timeout, the apply still completes with a warning and the IP
+addresses are populated on a later refresh.
+
+For an existing VM, install the agent manually with the image's package manager:
 
 ```bash
-sudo apt update
-sudo apt install -y qemu-guest-agent
+# Debian / Ubuntu
+sudo apt update && sudo apt install -y qemu-guest-agent
+
+# AlmaLinux / Rocky Linux / Fedora
+sudo dnf install -y qemu-guest-agent
+
+# Arch Linux
+sudo pacman -Syu --needed qemu-guest-agent
+```
+
+Then enable it:
+
+```bash
 sudo systemctl enable --now qemu-guest-agent
 ```
 
-you can set:
+then set:
 
 ```hcl
 qemu_agent_enabled = true
 ```
+
+and stop/start the VM so the virtual hardware is recreated with the agent channel:
+
+```bash
+qm stop 201
+qm start 201
+```
+
+A guest reboot is not enough when the agent was enabled after the VM had started.
+Changing `install_qemu_guest_agent` on an existing VM does not re-run Cloud-Init;
+install manually or recreate the VM.
 
 ## Limitations
 

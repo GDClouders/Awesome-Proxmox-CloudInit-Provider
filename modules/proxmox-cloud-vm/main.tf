@@ -10,6 +10,40 @@ locals {
     ? "dhcp"
     : (var.vm_ipv4_address == null ? null : "${var.vm_ipv4_address}/${var.vm_ipv4_prefix}")
   )
+
+  vendor_data_lines = concat(
+    ["#cloud-config"],
+    var.ssh_password_auth_enabled ? ["ssh_pwauth: true"] : [],
+    var.install_qemu_guest_agent ? [
+      "runcmd:",
+      "  - |",
+      "    install_status=0",
+      "    if command -v apt-get >/dev/null 2>&1; then",
+      "      apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y ${var.guest_agent_package} || install_status=1",
+      "    elif command -v dnf >/dev/null 2>&1; then",
+      "      dnf install -y ${var.guest_agent_package} || install_status=1",
+      "    elif command -v yum >/dev/null 2>&1; then",
+      "      yum install -y ${var.guest_agent_package} || install_status=1",
+      "    elif command -v pacman >/dev/null 2>&1; then",
+      "      if ! pacman -Qq ${var.guest_agent_package} >/dev/null 2>&1; then",
+      "        pacman -Syu --needed --noconfirm ${var.guest_agent_package} || install_status=1",
+      "      fi",
+      "    else",
+      "      echo 'Unsupported package manager' >&2",
+      "      install_status=1",
+      "    fi",
+      "    if [ \"$install_status\" -ne 0 ]; then",
+      "      echo 'Package install failed; checking existing agent service' >&2",
+      "    fi",
+      "    if ! systemctl enable --now ${var.guest_agent_service}; then",
+      "      echo 'Failed to enable the guest agent service' >&2",
+      "      exit 1",
+      "    fi",
+      "    exit 0",
+    ] : [],
+  )
+
+  vendor_data_enabled = var.ssh_password_auth_enabled || var.install_qemu_guest_agent
 }
 
 resource "proxmox_download_file" "cloud_image" {
@@ -32,8 +66,8 @@ resource "proxmox_download_file" "cloud_image" {
   }
 }
 
-resource "proxmox_virtual_environment_file" "ssh_pwauth" {
-  count = var.ssh_password_auth_enabled ? 1 : 0
+resource "proxmox_virtual_environment_file" "vendor_data" {
+  count = local.vendor_data_enabled ? 1 : 0
 
   content_type = "snippets"
   datastore_id = var.snippet_datastore
@@ -41,8 +75,8 @@ resource "proxmox_virtual_environment_file" "ssh_pwauth" {
   overwrite    = true
 
   source_raw {
-    data      = "#cloud-config\nssh_pwauth: true\n"
-    file_name = "vm-${var.vm_id}-ssh-pwauth.yaml"
+    data      = "${join("\n", local.vendor_data_lines)}\n"
+    file_name = "vm-${var.vm_id}-vendor-data.yaml"
   }
 }
 
@@ -128,8 +162,8 @@ resource "proxmox_virtual_environment_vm" "this" {
     datastore_id = var.vm_datastore
 
     vendor_data_file_id = (
-      var.ssh_password_auth_enabled
-      ? proxmox_virtual_environment_file.ssh_pwauth[0].id
+      local.vendor_data_enabled
+      ? proxmox_virtual_environment_file.vendor_data[0].id
       : null
     )
 

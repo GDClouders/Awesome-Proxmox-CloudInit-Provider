@@ -241,6 +241,21 @@ variable "ssh_password_auth_enabled" {
   default = false
 }
 
+variable "install_qemu_guest_agent" {
+  type    = bool
+  default = false
+}
+
+variable "guest_agent_package" {
+  type    = string
+  default = "qemu-guest-agent"
+}
+
+variable "guest_agent_service" {
+  type    = string
+  default = "qemu-guest-agent"
+}
+
 variable "snippet_datastore" {
   type    = string
   default = "local"

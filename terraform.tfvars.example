@@ -34,7 +34,7 @@ vm_disk_size_gb      = 40
 vm_disk_interface    = "virtio0"
 vm_disk_cache        = "none"
 
-# Leave false until qemu-guest-agent is installed and running in the guest.
+# Enables the Proxmox side only. Install the agent in the guest as well.
 qemu_agent_enabled = false
 
 network_bridge          = "vmbr0"
@@ -60,3 +60,8 @@ ssh_public_key_path = "~/.ssh/id_ed25519.pub"
 # Requires a snippets-enabled datastore and SSH access from Terraform to the Proxmox node.
 ssh_password_auth_enabled = false
 # snippet_datastore       = "local"
+
+# Install qemu-guest-agent via Cloud-Init (new VMs only; existing VMs need a manual install).
+install_qemu_guest_agent = false
+# guest_agent_package     = "qemu-guest-agent"
+# guest_agent_service     = "qemu-guest-agent"

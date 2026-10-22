@@ -191,7 +191,7 @@ variable "vm_memory_balloon_mb" {
 }
 
 variable "qemu_agent_enabled" {
-  description = "Enable the QEMU Guest Agent on the Proxmox side. Set to true only if the agent is installed and running in the guest."
+  description = "Enable the QEMU Guest Agent on the Proxmox side. The agent must be installed in the guest; set install_qemu_guest_agent for new VMs or install it manually."
   type        = bool
   default     = false
 }
@@ -329,8 +329,36 @@ variable "ssh_password_auth_enabled" {
   default     = false
 }
 
+variable "install_qemu_guest_agent" {
+  description = "Install and start the QEMU guest agent via Cloud-Init runcmd on first boot. Detects apt-get, dnf, yum, or pacman, so it works on Debian/Ubuntu, AlmaLinux, Rocky Linux, Fedora, and Arch Linux. Requires a snippets-enabled datastore and provider SSH access to the Proxmox node."
+  type        = bool
+  default     = false
+}
+
+variable "guest_agent_package" {
+  description = "Package installed by install_qemu_guest_agent. Defaults to qemu-guest-agent, which is available on Debian/Ubuntu, AlmaLinux, Rocky Linux, Fedora, and Arch Linux."
+  type        = string
+  default     = "qemu-guest-agent"
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9][a-zA-Z0-9._+-]*$", var.guest_agent_package))
+    error_message = "guest_agent_package must be a single package name without spaces or shell characters."
+  }
+}
+
+variable "guest_agent_service" {
+  description = "systemd service enabled by install_qemu_guest_agent. Defaults to qemu-guest-agent, matching the default package on Debian/Ubuntu, AlmaLinux, Rocky Linux, Fedora, and Arch Linux."
+  type        = string
+  default     = "qemu-guest-agent"
+
+  validation {
+    condition     = can(regex("^[a-zA-Z0-9][a-zA-Z0-9_.@+-]*$", var.guest_agent_service))
+    error_message = "guest_agent_service must be a single systemd unit name without spaces or shell characters."
+  }
+}
+
 variable "snippet_datastore" {
-  description = "Datastore for the Cloud-Init vendor-data snippet. Must have the snippets content type enabled. Used only when ssh_password_auth_enabled is true."
+  description = "Datastore for the Cloud-Init vendor-data snippet. Must have the snippets content type enabled. Used only when ssh_password_auth_enabled or install_qemu_guest_agent is true."
   type        = string
   default     = "local"
 }

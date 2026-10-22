@@ -34,6 +34,7 @@ module "vm" {
   qemu_agent_timeout       = var.qemu_agent_timeout
   vm_disk_size_gb          = var.vm_disk_size_gb
   vm_disk_interface        = var.vm_disk_interface
+  vm_disk_cache            = var.vm_disk_cache
   vm_disk_iothread         = var.vm_disk_iothread
   vm_disk_discard          = var.vm_disk_discard
   vm_disk_ssd              = var.vm_disk_ssd

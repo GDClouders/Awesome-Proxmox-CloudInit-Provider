@@ -1,7 +1,7 @@
 proxmox_endpoint = "https://172.168.100.10:8006/"
 proxmox_node     = "pve-01"
 
-# Solo per certificati self-signed; lasciare false con CA valida.
+# Only for self-signed certificates; leave false with a valid CA.
 proxmox_insecure = true
 
 image_datastore = "local"
@@ -11,13 +11,13 @@ vm_datastore    = "local"
 cloud_image_url       = "https://cloud.debian.org/images/cloud/trixie/latest/debian-13-genericcloud-amd64.qcow2"
 cloud_image_file_name = "debian-13-genericcloud-amd64.qcow2"
 cloud_image_overwrite = false
-# cloud_image_checksum           = "<hash-esadecimale>"
+# cloud_image_checksum           = "<hex-hash>"
 # cloud_image_checksum_algorithm = "sha256"
 
 vm_id          = 201
 vm_hostname    = "passbolt"
 vm_domain      = "mgmt.gdservice.com"
-vm_description = "Server Passbolt su Debian 13, gestito tramite Terraform"
+vm_description = "Passbolt server on Debian 13, managed by Terraform"
 vm_tags        = ["terraform", "debian"]
 
 vm_machine               = "q35"
@@ -32,8 +32,9 @@ vm_memory_mb         = 4096
 vm_memory_balloon_mb = 4096
 vm_disk_size_gb      = 40
 vm_disk_interface    = "virtio0"
+vm_disk_cache        = "none"
 
-# Lasciare false finche qemu-guest-agent non e installato e attivo nel guest.
+# Leave false until qemu-guest-agent is installed and running in the guest.
 qemu_agent_enabled = false
 
 network_bridge          = "vmbr0"
@@ -52,5 +53,5 @@ dns_servers = [
 ]
 
 vm_username         = "debian"
-# vm_password       = "cambiami"
+# vm_password       = "changeme"
 ssh_public_key_path = "~/.ssh/id_ed25519.pub"

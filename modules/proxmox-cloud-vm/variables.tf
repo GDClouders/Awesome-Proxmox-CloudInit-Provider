@@ -54,7 +54,7 @@ variable "vm_domain" {
 
 variable "vm_description" {
   type    = string
-  default = "VM gestita tramite Terraform"
+  default = "VM managed by Terraform"
 }
 
 variable "vm_tags" {
@@ -145,6 +145,11 @@ variable "vm_disk_size_gb" {
 variable "vm_disk_interface" {
   type    = string
   default = "virtio0"
+}
+
+variable "vm_disk_cache" {
+  type    = string
+  default = "none"
 }
 
 variable "vm_disk_iothread" {

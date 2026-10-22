@@ -27,7 +27,7 @@ resource "proxmox_download_file" "cloud_image" {
   lifecycle {
     precondition {
       condition     = (var.cloud_image_checksum == null) == (var.cloud_image_checksum_algorithm == null)
-      error_message = "cloud_image_checksum e cloud_image_checksum_algorithm devono essere impostati insieme."
+      error_message = "cloud_image_checksum and cloud_image_checksum_algorithm must be set together."
     }
   }
 }
@@ -45,12 +45,12 @@ resource "proxmox_virtual_environment_vm" "this" {
   lifecycle {
     precondition {
       condition     = var.vm_ipv4_mode == "dhcp" || (var.vm_ipv4_address != null && var.vm_ipv4_gateway != null)
-      error_message = "Con vm_ipv4_mode=static devi specificare vm_ipv4_address e vm_ipv4_gateway."
+      error_message = "With vm_ipv4_mode=static you must specify vm_ipv4_address and vm_ipv4_gateway."
     }
 
     precondition {
       condition     = var.vm_bios != "ovmf" || var.vm_efi_disk_enabled
-      error_message = "Con vm_bios=ovmf devi impostare vm_efi_disk_enabled=true."
+      error_message = "With vm_bios=ovmf you must set vm_efi_disk_enabled=true."
     }
   }
 
@@ -88,6 +88,7 @@ resource "proxmox_virtual_environment_vm" "this" {
     import_from  = proxmox_download_file.cloud_image.id
     interface    = var.vm_disk_interface
     size         = var.vm_disk_size_gb
+    cache        = var.vm_disk_cache
     iothread     = var.vm_disk_iothread
     discard      = var.vm_disk_discard
     ssd          = var.vm_disk_ssd

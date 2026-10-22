@@ -13,15 +13,15 @@ output "vm_fqdn" {
 output "vm_ip_address" {
   value = (
     var.vm_ipv4_mode == "dhcp"
-    ? "Assegnato tramite DHCP"
-    : coalesce(var.vm_ipv4_address, "Non configurato")
+    ? "Assigned via DHCP"
+    : coalesce(var.vm_ipv4_address, "Not configured")
   )
 }
 
 output "ssh_command" {
   value = (
     var.vm_ipv4_mode == "dhcp"
-    ? "Recuperare l'indirizzo dal DHCP o da Proxmox"
-    : (var.vm_ipv4_address == null ? "Configurare vm_ipv4_address" : "ssh ${var.vm_username}@${var.vm_ipv4_address}")
+    ? "Retrieve the address from DHCP or Proxmox"
+    : (var.vm_ipv4_address == null ? "Configure vm_ipv4_address" : "ssh ${var.vm_username}@${var.vm_ipv4_address}")
   )
 }
